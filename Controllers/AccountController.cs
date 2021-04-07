@@ -1,78 +1,75 @@
 using System;
-using System.Security.Cryptography;
-using System.Text;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Entities;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Models.DTO;
-using Repository;
+using Services;
 
 namespace Controllers
 {
     public class AccountController : BaseAPIController
     {
-        private readonly IEndUserRepository _repository;
-        public AccountController(IEndUserRepository repository)
+        private readonly UserManager<EndUser> _userManager;
+        private readonly SignInManager<EndUser> _signInManager;
+        private readonly JwtTokenService _tokenService;
+        public AccountController(UserManager<EndUser> userManager, SignInManager<EndUser> signInManager, JwtTokenService tokenService)
         {
-            _repository = repository;
+            _tokenService = tokenService;
+            _signInManager = signInManager;
+            _userManager = userManager;
         }
-        [HttpGet("{id}")]
-        public async Task<ActionResult<EndUser>> GetUser(Guid id)
-        {
-            EndUser user = await _repository.GetUserByIdAsync(id);
-            if (user != null)
-            {
-                return Ok(user);
-            }
-            return BadRequest("User Not Found");
-        }
+
+
         [HttpPost("signup")]
-        public async Task<ActionResult<EndUser>> CreateEndUser(SignupDTO signupDTO)
+        public async Task<ActionResult<IdentityResult>> CreateEndUser(SignupDTO signupDTO)
         {
-            if (await CheckIfUserExists(signupDTO)) return BadRequest("Username or Email already exists");
-
-            using var hmac = new HMACSHA512();
-
             EndUser user = new EndUser
             {
-                Name = signupDTO.Name,
-                Email = signupDTO.Email,
-                PasswordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(signupDTO.Password)),
-                PasswordSalt = hmac.Key
+                UserName = signupDTO.Name,
+                Email = signupDTO.Email
             };
-            if (await _repository.CreateEndUserAsync(user))
-                return Ok(user);
-            return BadRequest("User Creation Failed");
+            var result = await _userManager.CreateAsync(user, signupDTO.Password);
+            if (result.Succeeded)
+            {
+                return Ok(returnRTO(user));
+            }
+            return BadRequest(result);
+
         }
         [HttpPost("signin")]
-        public async Task<ActionResult<EndUser>> LoginEndUser(SignInDTO signInDTO)
+        public async Task<ActionResult<UserDTO>> LoginEndUser(SignInDTO signInDTO)
         {
-            EndUser user = await _repository.GetUserByEmailAsync(signInDTO.Email);
+            var user = await _userManager.FindByEmailAsync(signInDTO.Email);
+            if (user == null) return BadRequest("Invalid Email");
 
-            if (user != null)
+            var result = await _signInManager.CheckPasswordSignInAsync(user, signInDTO.Password, false);
+
+            if (result.Succeeded)
             {
-                using var hmac = new HMACSHA512(user.PasswordSalt);
-                byte[] computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(signInDTO.Password));
-                for (uint i = 0; i != computedHash.Length; ++i)
-                {
-                    if (computedHash[i] != user.PasswordHash[i])
-                        return BadRequest("Invalid Password");
-                }
-                return Ok(user);
+                return Ok(returnRTO(user));
             }
-            return BadRequest("Invalid Password");
-
+            return Unauthorized();
         }
 
-        private async Task<bool> CheckIfUserExists(SignupDTO signupDTO)
+        [HttpGet]
+        [Authorize]
+        public async Task<ActionResult<UserDTO>> GetAuthorizedUser()
         {
-            EndUser user_by_name = await _repository.GetUserByUsernameAsync(signupDTO.Name);
-            if (user_by_name != null)
-                return true;
-            EndUser user_by_email = await _repository.GetUserByEmailAsync(signupDTO.Email);
-            if (user_by_email != null)
-                return true;
-            return false;
+            var user = await _userManager.FindByEmailAsync(User.FindFirstValue(ClaimTypes.Email));
+            return Ok(returnRTO(user));
+        }
+        private UserDTO returnRTO(EndUser user)
+        {
+            return new UserDTO
+            {
+                Username = user.UserName,
+                Token = _tokenService.CreateToken(user),
+                ImageUrl = null
+            };
         }
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Models;
 using Models.DTO;
@@ -8,6 +9,7 @@ using Repository;
 
 namespace Controllers
 {
+    [Authorize]
     public class SongsController : BaseAPIController
     {
         private readonly ISongRepository _repository;
@@ -22,6 +24,7 @@ namespace Controllers
             IEnumerable<Song> songs = await _repository.GetSongsAsync();
             return Ok(songs);
         }
+
         [HttpGet("{id}")]
         public async Task<ActionResult<IEnumerable<Song>>> GetSong(Guid id)
         {
