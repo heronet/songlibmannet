@@ -19,10 +19,25 @@ namespace Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Song>>> GetSongs()
+        public async Task<ActionResult<IEnumerable<SongDTO>>> GetSongs()
         {
             IEnumerable<Song> songs = await _repository.GetSongsAsync();
-            return Ok(songs);
+            List<SongDTO> songDTOs = new List<SongDTO>();
+            SongDTO sdto = new SongDTO();
+            foreach (var item in songs)
+            {
+                sdto = new SongDTO
+                {
+                    Title = item.Title,
+                    Artist = item.Artist.Name,
+                    Album = item.Album.Title,
+                    Id = item.Id,
+                    TrackNo = item.TrackNo
+                };
+                songDTOs.Add(sdto);
+            }
+
+            return Ok(songDTOs);
         }
 
         [HttpGet("{id}")]
@@ -34,14 +49,52 @@ namespace Controllers
             return BadRequest("Song Not Found");
         }
         [HttpPost]
-        public async Task<ActionResult> AddSong(SongDTO songDTO)
+        public async Task<ActionResult<SongDTO>> AddSong(SongDTO songDTO)
         {
+
+            Song findSong = await _repository.GetSongByTitleAsync(songDTO.Title);
+            if (findSong != null) return BadRequest("Song already exists");
+
+            Artist artist = await _repository.GetArtistAsync(songDTO.Artist);
+            Album album = await _repository.GetAlbumAsync(songDTO.Album);
+
+            if (artist == null)
+            {
+                artist = new Artist
+                {
+                    Name = songDTO.Artist
+                };
+            }
+            if (album == null)
+            {
+                album = new Album
+                {
+                    Title = songDTO.Album,
+                    Artist = artist
+                };
+            }
+
             Song song = new Song
             {
                 Title = songDTO.Title,
-                Artist = songDTO.Artist
+                Artist = artist,
+                Album = album,
+                TrackNo = songDTO.TrackNo ?? 0,
+                ReleaseDate = songDTO.ReleaseDate
             };
-            return Ok(await _repository.AddSongAsync(song));
+            if (await _repository.AddSongAsync(song))
+            {
+                return new SongDTO
+                {
+                    Title = song.Title,
+                    Artist = song.Artist.Name,
+                    Album = song.Album.Title,
+                    TrackNo = song.TrackNo,
+                    ReleaseDate = song.ReleaseDate,
+                    Id = song.Id
+                };
+            }
+            return BadRequest("Something went wrong");
         }
         [HttpDelete]
         public async Task<ActionResult> DeleteSong(Guid id)
@@ -57,7 +110,6 @@ namespace Controllers
             if (song != null)
             {
                 song.Title = songDTO.Title;
-                song.Artist = songDTO.Artist;
                 await _repository.SaveChangesAsync();
                 return Ok(song);
             }

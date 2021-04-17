@@ -3,14 +3,16 @@ using System;
 using Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace songlibmannet.Data.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20210415170028_AlbumsAdded")]
+    partial class AlbumsAdded
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -217,9 +219,6 @@ namespace songlibmannet.Data.Migrations
                     b.Property<Guid>("ArtistId")
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime?>("ReleaseDate")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Title")
                         .HasColumnType("TEXT");
 
@@ -256,14 +255,8 @@ namespace songlibmannet.Data.Migrations
                     b.Property<Guid>("ArtistId")
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime?>("ReleaseDate")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Title")
                         .HasColumnType("TEXT");
-
-                    b.Property<int>("TrackNo")
-                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 

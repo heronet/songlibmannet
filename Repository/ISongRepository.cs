@@ -12,5 +12,8 @@ namespace Repository
         Task<bool> AddSongAsync(Song song);
         Task<bool> DeleteSongAsync(Guid song);
         Task<bool> SaveChangesAsync();
+        Task<Artist> GetArtistAsync(string name);
+        Task<Album> GetAlbumAsync(string title);
+        Task<Song> GetSongByTitleAsync(string title);
     }
 }
