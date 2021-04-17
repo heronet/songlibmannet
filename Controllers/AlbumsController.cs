@@ -26,19 +26,11 @@ namespace Controllers
                 return NotFound("Not found");
 
             List<SongDTO> songs = new List<SongDTO>();
-            foreach (var item in album.Songs)
+            foreach (var song in album.Songs)
             {
-                var song = new SongDTO
-                {
-                    Title = item.Title,
-                    Artist = item.Artist.Name,
-                    Album = item.Album.Title,
-                    Id = item.Id,
-                    TrackNo = item.TrackNo,
-                    ReleaseDate = item.ReleaseDate
-                };
-                songs.Add(song);
+                songs.Add(SongToDto(song));
             }
+            songs.Sort((o, t) => o.TrackNo - t.TrackNo ?? 0);
             AlbumDTO albumDTO = new AlbumDTO
             {
                 Artist = album.Artist.Name,
@@ -49,6 +41,20 @@ namespace Controllers
                 ReleaseDate = album.ReleaseDate
             };
             return Ok(albumDTO);
+        }
+        private SongDTO SongToDto(Song song)
+        {
+            return new SongDTO
+            {
+                Title = song.Title,
+                Artist = song.Artist.Name,
+                Album = song.Album.Title,
+                TrackNo = song.TrackNo,
+                ReleaseDate = song.ReleaseDate,
+                Id = song.Id,
+                ArtistId = song.ArtistId,
+                AlbumId = song.AlbumId
+            };
         }
     }
 }

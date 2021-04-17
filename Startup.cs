@@ -11,7 +11,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Repository;
 using Services;
 
 namespace songlibmannet
@@ -39,7 +38,6 @@ namespace songlibmannet
             });
             services.AddCors();
 
-            services.AddScoped<ISongRepository, SongRepository>();
             services.AddScoped<JwtTokenService>();
 
             services.AddIdentityCore<EndUser>(opts =>

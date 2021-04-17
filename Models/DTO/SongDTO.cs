@@ -16,5 +16,7 @@ namespace Models.DTO
         public Guid Id { get; set; }
         [Required]
         public int? TrackNo { get; set; }
+        public Guid ArtistId { get; set; }
+        public Guid AlbumId { get; set; }
     }
 }
